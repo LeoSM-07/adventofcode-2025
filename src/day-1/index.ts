@@ -1,19 +1,26 @@
 import { FileSystem } from "@effect/platform"
 import { BunFileSystem } from "@effect/platform-bun"
-import {
-  Effect,
-  Layer,
-  Logger,
-  ParseResult,
-  pipe,
-  Schema,
-  Stream,
-} from "effect"
+import { Effect, Layer, Logger, pipe, Schema, Stream } from "effect"
+
+const Direction = Schema.Literal("L", "R")
+const RotationTuple = Schema.TemplateLiteralParser(
+  Direction,
+  Schema.NonNegativeInt,
+)
 
 class Rotation extends Schema.Class<Rotation>("Rotation")({
-  direction: Schema.Literal("L", "R"),
+  direction: Direction,
   amount: Schema.NonNegativeInt,
 }) {
+  static fromString = Schema.transform(
+    RotationTuple,
+    Schema.typeSchema(Rotation),
+    {
+      decode: ([direction, amount]) => Rotation.make({ direction, amount }),
+      encode: (r) => [r.direction, r.amount] as const,
+    },
+  )
+
   override toString() {
     return `${this.direction}${this.amount}`
   }
@@ -37,37 +44,6 @@ class Rotation extends Schema.Class<Rotation>("Rotation")({
   }
 }
 
-export const RotationFromString = Schema.transformOrFail(
-  Schema.String,
-  Rotation,
-  {
-    strict: true,
-    decode: (input, _, ast) => {
-      const direction = input.at(0)
-      const amount = parseInt(input.substring(1))
-      if (!direction || (direction !== "L" && direction !== "R")) {
-        return ParseResult.fail(
-          new ParseResult.Type(
-            ast,
-            input,
-            `Failed to parse direction from string ${input}`,
-          ),
-        )
-      } else if (isNaN(amount)) {
-        return ParseResult.fail(
-          new ParseResult.Type(
-            ast,
-            input,
-            "Failed to prase amount from string",
-          ),
-        )
-      }
-      return ParseResult.succeed(Rotation.make({ amount, direction }))
-    },
-    encode: (input) => ParseResult.succeed(input.toString()),
-  },
-)
-
 const program = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem
 
@@ -76,7 +52,7 @@ const program = Effect.gen(function* () {
 
   const { count } = yield* pipe(
     Stream.fromIterable(lines),
-    Stream.mapEffect(Schema.decodeUnknown(RotationFromString)),
+    Stream.mapEffect(Schema.decodeUnknown(Rotation.fromString)),
     Stream.tap((n) => Effect.logDebug(n.toString())),
     Stream.runFold(
       { count: 0, position: 50 },
