@@ -4,11 +4,15 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "prepare": "effect-language-service patch"
+    "prepare": "effect-language-service patch",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@effect/language-service": "^0.58.0",
-    "@types/bun": "latest"
+    "@effect/vitest": "^0.27.0",
+    "@types/bun": "latest",
+    "vitest": "^4.0.14"
   },
   "peerDependencies": {
     "typescript": "^5"
