@@ -1,6 +1,6 @@
 import { FileSystem } from "@effect/platform"
 import { BunFileSystem } from "@effect/platform-bun"
-import { Effect, Layer, Logger, pipe, Schema, Stream } from "effect"
+import { Effect, Layer, Logger, Schema, Stream } from "effect"
 
 const Direction = Schema.Literal("L", "R")
 const RotationTuple = Schema.TemplateLiteralParser(
@@ -47,13 +47,11 @@ class Rotation extends Schema.Class<Rotation>("Rotation")({
 const program = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem
 
-  const fileString = yield* fs.readFileString("./src/day-1/input.txt")
-  const lines = fileString.split("\n").slice(0, -1)
-
-  const { count } = yield* pipe(
-    Stream.fromIterable(lines),
+  const { count } = yield* fs.stream("./src/day-1/input.txt").pipe(
+    Stream.decodeText(),
+    Stream.splitLines,
+    Stream.filter((line) => line.length > 0),
     Stream.mapEffect(Schema.decodeUnknown(Rotation.fromString)),
-    Stream.tap((n) => Effect.logDebug(n.toString())),
     Stream.runFold(
       { count: 0, position: 50 },
       ({ count, position }, rotation) => {
