@@ -18,6 +18,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@effect/cli": "^0.72.1",
     "@effect/platform": "^0.93.6",
     "@effect/platform-bun": "^0.86.0",
     "effect": "^3.19.8",
